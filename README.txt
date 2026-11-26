@@ -39,7 +39,8 @@ RENDER AND VERCEL
 2. Wait for Render to deploy. Confirm that its /health endpoint returns
    {"status":"ok"}. Copy the HTTPS onrender.com origin.
 3. Import the same repository in Vercel Hobby with vercel/ as its Root Directory.
-   Set RENDER_ORIGIN to the Render HTTPS origin for Production and deploy.
+   If deploying to a different Render service, update the origin in
+   vercel/vercel.json before deploying.
    The rewrite keeps pages, forms, static files, and downloads on one origin
    and forwards them to Render. Private responses bypass Vercel caching.
 4. Open the Vercel URL and smoke-test registration, sign-in, filters, and a sample
