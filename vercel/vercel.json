@@ -6,6 +6,10 @@
   "outputDirectory": "public",
   "rewrites": [
     {
+      "source": "/",
+      "destination": "https://docfolio-organizer.onrender.com/"
+    },
+    {
       "source": "/:path*",
       "destination": "https://docfolio-organizer.onrender.com/:path*"
     }
