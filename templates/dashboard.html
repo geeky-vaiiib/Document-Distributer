@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% set headings = {'dashboard': 'Overview', 'documents': 'Documents', 'reminders': 'Reminders'} %}
+{% block title %}{{ headings[section] }} · Docfolio{% endblock %}
+{% block content %}
+{% macro reminder_list(items, full=false) %}
+  <ul class="reminder-list">
+    {% for doc in items %}
+    <li>
+      <span class="tile {% if doc.status == 'expired' %}rose{% else %}amber{% endif %}" aria-hidden="true"><i class="glyph glyph-bell"></i></span>
+      <div class="reminder-copy">
+        <a href="{{ url_for('document_form', document_id=doc.id) }}">{{ doc.document_name }}</a>
+        <small>{{ doc.expiry_date|friendly_date }} ·
+          {% if doc.days < 0 %}{{ -doc.days }} {{ 'day' if doc.days == -1 else 'days' }} overdue
+          {% elif doc.days == 0 %}Due today
+          {% else %}In {{ doc.days }} {{ 'day' if doc.days == 1 else 'days' }}{% endif %}
+        </small>
+      </div>
+      {% if full and doc.status != 'expired' %}
+      <a class="button subtle compact" href="{{ url_for('calendar_reminder', document_id=doc.id) }}">Add to calendar</a>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+<header class="page-heading">
+  <div>
+    <p class="today"><i class="glyph glyph-calendar" aria-hidden="true"></i> {{ today.strftime('%A, %B') }} {{ today.day }}, {{ today.year }}</p>
+    <h1>{{ headings[section] }}</h1>
+    <p>{% if section == 'dashboard' %}Manage your student documents and stay ahead of expiry dates.{% elif section == 'documents' %}Search, update, and download the files in your workspace.{% else %}Review overdue documents and deadlines in the next 30 days.{% endif %}</p>
+  </div>
+  <a class="button primary" href="{{ url_for('document_form') }}"><span class="plus" aria-hidden="true">+</span> Add document</a>
+</header>
+
+{% if section == 'dashboard' %}
+  <section class="hero" aria-labelledby="welcome-title">
+    <div class="hero-copy">
+      <h2 id="welcome-title">Welcome back, {{ student_first_name }}.</h2>
+      <p>{% if counts.soon %}You have {{ counts.soon }} {{ 'document' if counts.soon == 1 else 'documents' }} expiring in the next 30 days.{% elif counts.expired %}You have {{ counts.expired }} {{ 'document' if counts.expired == 1 else 'documents' }} past the expiry date.{% else %}No upcoming expiries in the next 30 days.{% endif %}</p>
+      <a class="button light compact" href="{{ url_for('reminders') }}">View reminders <span aria-hidden="true">→</span></a>
+    </div>
+    {% include "illustration.html" %}
+  </section>
+
+  <section class="stats" aria-label="Document totals">
+    {% for label, value, theme, icon, filter in [
+      ('Total documents', total, 'violet', 'folder', ''),
+      ('Expiring soon', counts.soon, 'amber', 'clock', 'soon'),
+      ('Expired', counts.expired, 'rose', 'alert', 'expired'),
+      ('Valid', counts.valid, 'mint', 'check', 'valid')
+    ] %}
+    <a class="stat" href="{{ url_for('documents', status=filter) if filter else url_for('documents') }}">
+      <span class="tile {{ theme }}" aria-hidden="true"><i class="glyph glyph-{{ icon }}">{% if icon == 'alert' %}!{% endif %}</i></span>
+      <span><small>{{ label }}</small><strong>{{ value }}</strong></span>
+      <span class="stat-arrow" aria-hidden="true">↗</span>
+    </a>
+    {% endfor %}
+  </section>
+{% endif %}
+
+{% if section == 'reminders' %}
+  <div class="reminder-grid">
+    {% for heading, key, empty in [
+      ('Expiring soon', 'soon', 'No documents expire in the next 30 days.'),
+      ('Overdue', 'expired', 'No documents are overdue.')
+    ] %}
+      {% set items = attention|selectattr('status', 'equalto', key)|list %}
+      <section class="panel">
+        <div class="panel-heading"><h2>{{ heading }}</h2><span class="count">{{ items|length }}</span></div>
+        {% if items %}
+          {{ reminder_list(items, true) }}
+        {% else %}
+          <p class="panel-empty">{{ empty }}</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="board{% if section == 'documents' %} board-full{% endif %}">
+    <section class="panel document-panel" aria-labelledby="document-list-title">
+      <div class="panel-heading">
+        <div class="panel-title"><h2 id="document-list-title">My documents</h2><span class="count">{{ docs|length }}</span></div>
+        {% if section == 'dashboard' %}<a class="text-link" href="{{ url_for('documents') }}">View all <span aria-hidden="true">→</span></a>{% endif %}
+      </div>
+      <form class="filters{% if section == 'documents' %} filters-full{% endif %}" method="get" action="{{ url_for(section) }}">
+        <div class="search-field"><i class="glyph glyph-search" aria-hidden="true"></i><input type="search" name="search" value="{{ search }}" aria-label="Search documents" placeholder="Search documents" maxlength="150"></div>
+        <select name="category" aria-label="Filter by category">
+          <option value="">All categories</option>
+          {% for item in categories %}<option value="{{ item }}"{% if item == category %} selected{% endif %}>{{ category_labels.get(item, item) }}</option>{% endfor %}
+        </select>
+        <select name="status" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          {% for key, label in status_labels.items() %}<option value="{{ key }}"{% if key == status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% if section == 'documents' %}
+        <select name="sort" aria-label="Sort documents">
+          {% for key, label in [('recent', 'Newest first'), ('expiry', 'Expiry date'), ('name', 'Name A–Z')] %}<option value="{{ key }}"{% if key == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        <div class="filter-actions">
+          <button class="button subtle compact" type="submit">Apply</button>
+          {% if search or category or status or sort != 'recent' %}<a class="text-link" href="{{ url_for(section) }}">Reset</a>{% endif %}
+        </div>
+      </form>
+      {% if docs %}
+        <div class="table-wrap">
+          <table role="table" aria-labelledby="document-list-title">
+            <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Document</th><th role="columnheader" scope="col">Category</th>{% if section == 'documents' %}<th role="columnheader" scope="col">Issued</th>{% endif %}<th role="columnheader" scope="col">Expiry date</th><th role="columnheader" scope="col">Status</th><th role="columnheader" scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody role="rowgroup">
+              {% for doc in docs %}
+              <tr role="row">
+                <td role="cell" class="doc-title-cell"><div class="doc-name">
+                  <span class="tile file-tile {{ {'Academic Documents':'violet', 'Certificates':'amber', 'Identity Documents':'mint'}.get(doc.category, 'slate') }}" aria-hidden="true"><i class="glyph glyph-file"></i></span>
+                  <span><a href="{{ url_for('document_form', document_id=doc.id) }}">{{ doc.document_name }}</a><small>{{ doc.file_type or 'File' }}</small></span>
+                </div></td>
+                <td role="cell"><span class="cell-label" aria-hidden="true">Category</span>{{ category_labels.get(doc.category, doc.category) }}</td>
+                {% if section == 'documents' %}<td role="cell"><span class="cell-label" aria-hidden="true">Issued</span>{{ doc.issue_date|friendly_date }}</td>{% endif %}
+                <td role="cell"><span class="cell-label" aria-hidden="true">Expiry date</span>{{ doc.expiry_date|friendly_date }}</td>
+                <td role="cell"><span class="cell-label" aria-hidden="true">Status</span><span class="status status-{{ doc.status }}">{{ status_labels[doc.status] }}</span></td>
+                <td role="cell" class="row-action"><a href="{{ url_for('uploaded_file', filename=doc.file_name) }}" target="_blank" rel="noopener" aria-label="Open {{ doc.document_name }} in a new tab" title="Open file">↗</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="tile violet" aria-hidden="true"><i class="glyph glyph-folder"></i></span>
+          <h3>{{ 'No matching documents' if total else 'No documents yet' }}</h3>
+          <p>{{ 'Try changing your search or filters.' if total else 'Upload your first document to start tracking it here.' }}</p>
+          <a class="button subtle compact" href="{{ url_for(section if total else 'document_form') }}">{{ 'Clear filters' if total else 'Add document' }}</a>
+        </div>
+      {% endif %}
+    </section>
+    {% if section == 'dashboard' %}
+    <section class="panel reminder-panel" aria-labelledby="attention-title">
+      <div class="panel-heading"><h2 id="attention-title">Needs attention</h2><span class="tile violet" aria-hidden="true"><i class="glyph glyph-bell"></i></span></div>
+      {% if attention %}{{ reminder_list(attention[:4]) }}{% else %}<p class="panel-empty">You’re all caught up.</p>{% endif %}
+      <a class="reminder-link" href="{{ url_for('reminders') }}">All reminders <span aria-hidden="true">→</span></a>
+    </section>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

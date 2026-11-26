@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit document' if current else 'Add document' }} · Docfolio{% endblock %}
+{% block content %}
+<a class="text-link back-link" href="{{ url_for('documents') }}"><span aria-hidden="true">←</span> Documents</a>
+<header class="page-heading form-heading">
+  <div>
+    <h1>{{ 'Edit document' if current else 'Add document' }}</h1>
+    <p>{{ 'Update the document details or replace the attached file.' if current else 'Upload a file and add an expiry date to track its deadline.' }}</p>
+  </div>
+</header>
+<div class="editor{% if current %} editor-with-actions{% endif %}">
+  <section class="panel editor-panel" aria-labelledby="details-title">
+    <div class="panel-heading"><h2 id="details-title">Document details</h2></div>
+    <form class="document-form" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="document_name">Document name</label>
+        <input id="document_name" name="document_name" value="{{ values.get('document_name', '') }}" maxlength="120" placeholder="e.g. University ID card" required>
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Choose a category</option>
+          {% for item in categories %}<option value="{{ item }}"{% if item == values.get('category') %} selected{% endif %}>{{ category_labels.get(item, item) }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="issue_date">Issue date <small>Optional</small></label>
+          <input id="issue_date" type="date" name="issue_date" value="{{ values.get('issue_date') or '' }}">
+        </div>
+        <div class="field">
+          <label for="expiry_date">Expiry date <small>Optional</small></label>
+          <input id="expiry_date" type="date" name="expiry_date" value="{{ values.get('expiry_date') or '' }}">
+        </div>
+      </div>
+      <div class="field">
+        <label for="document">{{ 'Replace file' if current else 'Document file' }}{% if current %} <small>Optional</small>{% endif %}</label>
+        <div class="upload-field"><input id="document" type="file" name="document" accept=".pdf,.png,.jpg,.jpeg" aria-describedby="file-help" {% if not current %}required{% endif %}><small id="file-help">PDF, PNG or JPEG · Up to 10 MB</small></div>
+      </div>
+      <div class="form-actions">
+        <a class="button subtle" href="{{ url_for('documents') }}">Cancel</a>
+        <button class="button primary" type="submit">{{ 'Save changes' if current else 'Add document' }}</button>
+      </div>
+    </form>
+  </section>
+  {% if current %}
+  <section class="panel editor-aside">
+    <div class="panel-heading"><h2>File &amp; actions</h2></div>
+    <div class="action-list">
+      <a class="button subtle" href="{{ url_for('uploaded_file', filename=current.file_name) }}" target="_blank" rel="noopener">Open file <span aria-hidden="true">↗</span></a>
+      <a class="button subtle" href="{{ url_for('uploaded_file', filename=current.file_name, download=1) }}">Download file <span aria-hidden="true">↓</span></a>
+      {% if current.expiry_date %}<a class="button subtle" href="{{ url_for('calendar_reminder', document_id=current.id) }}">Add to calendar <span aria-hidden="true">+</span></a>{% endif %}
+      <details class="delete-details">
+        <summary>Delete document</summary>
+        <p>This removes the document and its attached file.</p>
+        <form method="post" action="{{ url_for('delete_document', document_id=current.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button danger compact" type="submit">Confirm delete</button>
+        </form>
+      </details>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

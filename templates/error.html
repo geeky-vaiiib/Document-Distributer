@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Docfolio{% endblock %}
+{% block content %}
+<section class="panel error-panel">
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <a class="button primary" href="{{ url_for('dashboard' if g.workspace else 'login') }}">Return to {{ 'overview' if g.workspace else 'sign-in' }}</a>
+</section>
+{% endblock %}

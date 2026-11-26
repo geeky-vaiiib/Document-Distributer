@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: docfolio-organizer
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 app:app
+    healthCheckPath: /health
+    envVars:
+      - key: DOCFOLIO_PRODUCTION
+        value: "1"
+      - key: DOCFOLIO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

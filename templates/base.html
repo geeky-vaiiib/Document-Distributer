@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7fc">
+  <title>{% block title %}Student Document Organizer{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='workspace.js') }}"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="shell{% if not g.workspace %} shell-guest{% endif %}">
+    {% if g.workspace %}
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('dashboard') }}">
+        <span class="brand-mark" aria-hidden="true"><i class="glyph glyph-file"></i></span>
+        <span><strong>Docfolio</strong><small>Student workspace</small></span>
+      </a>
+      <nav aria-label="Workspace">
+        <p class="nav-label">Workspace</p>
+        <a href="{{ url_for('dashboard') }}" {% if section == 'dashboard' %}aria-current="page"{% endif %}>
+          <i class="glyph glyph-grid" aria-hidden="true"></i> Overview
+        </a>
+        <a href="{{ url_for('documents') }}" {% if section == 'documents' or request.endpoint == 'document_form' %}aria-current="page"{% endif %}>
+          <i class="glyph glyph-folder" aria-hidden="true"></i> Documents
+        </a>
+        <a href="{{ url_for('reminders') }}" {% if section == 'reminders' %}aria-current="page"{% endif %}>
+          <i class="glyph glyph-bell" aria-hidden="true"></i> Reminders
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="profile">
+          <span class="avatar" aria-hidden="true">{{ student_initials }}</span>
+          <strong>{{ student_name }}</strong>
+        </div>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="sign-out" type="submit"><span aria-hidden="true">↪</span> Sign out</button>
+        </form>
+      </div>
+    </aside>
+    {% endif %}
+    <main class="{% if g.workspace %}workspace{% else %}guest{% endif %}" id="main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="messages" aria-live="polite">
+        {% for category, message in messages %}
+        <p class="notice notice-{{ category }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

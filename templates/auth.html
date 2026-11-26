@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Create account' if registering else 'Sign in' }} · Docfolio{% endblock %}
+{% block content %}
+<div class="entry">
+  <div class="entry-content">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><i class="glyph glyph-file"></i></span>
+      <span><strong>Docfolio</strong><small>Student workspace</small></span>
+    </div>
+    <div class="entry-copy">
+      <h1>{{ 'Create account' if registering else 'Sign in' }}</h1>
+      <p>{{ 'Set up your student workspace.' if registering else 'Access your documents and expiry reminders.' }}</p>
+      <form class="auth-form" method="post" action="{{ url_for('register' if registering else 'login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if errors.login %}<p class="field-error auth-error" role="alert">{{ errors.login }}</p>{% endif %}
+        {% if registering %}
+        <div class="field">
+          <label for="student-name">Student name</label>
+          <input id="student-name" name="student_name" autocomplete="name" maxlength="100"
+            value="{{ name_value|default('') }}" required
+            {% if errors.student_name %}aria-invalid="true" aria-describedby="student-name-error"{% endif %}>
+          {% if errors.student_name %}<span class="field-error" id="student-name-error" role="alert">{{ errors.student_name }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="username" maxlength="254"
+            value="{{ email|default('') }}" placeholder="you@example.com" required
+            {% if errors.email %}aria-invalid="true" aria-describedby="email-error"{% endif %}>
+          {% if errors.email %}<span class="field-error" id="email-error" role="alert">{{ errors.email }}</span>{% endif %}
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password"
+            maxlength="128" {% if registering %}minlength="8" aria-describedby="{{ 'password-error' if errors.password else 'password-hint' }}"{% endif %}
+            autocomplete="{{ 'new-password' if registering else 'current-password' }}" required
+            {% if errors.password %}aria-invalid="true"{% if not registering %} aria-describedby="password-error"{% endif %}{% endif %}>
+          {% if errors.password %}<span class="field-error" id="password-error" role="alert">{{ errors.password }}</span>{% endif %}
+          {% if registering and not errors.password %}<small class="password-hint" id="password-hint">Use at least 8 characters.</small>{% endif %}
+        </div>
+        <button class="button primary" type="submit">{{ 'Create account' if registering else 'Sign in' }}</button>
+      </form>
+      <p class="auth-switch">
+        {% if registering %}
+        Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+        {% else %}
+        New student? <a href="{{ url_for('register') }}">Create an account</a>
+        {% endif %}
+      </p>
+      {% if not registering %}
+      <form class="auth-demo" method="post" action="{{ url_for('open_demo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button subtle" type="submit">Try sample workspace</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="entry-art">{% include "illustration.html" %}</div>
+</div>
+{% endblock %}
